@@ -1,78 +1,5 @@
 // Teclas que estao sendo apertadas
 const teclas = {};
-const DURACAO_CORRIDA = 60;
-
-
-// Todos os circuitos passam pela largada à esquerda, no sentido para baixo.
-const MAPAS = {
-  classico: {
-    nome: 'Clássico', descricao: 'Duas curvas largas e um estreitamento no centro.',
-    curvas: [
-      // Parte superior central para o alto esquerdo
-      [400, 170, 360, 120, 310, 70, 240, 70],
-
-      // Alto esquerdo até a curva esquerda
-      [240, 70, 140, 70, 70, 140, 80, 250],
-
-      // Curva esquerda até a parte inferior esquerda
-      [80, 250, 70, 360, 140, 430, 240, 430],
-
-      // Inferior esquerdo até o centro inferior
-      [240, 430, 310, 430, 360, 380, 400, 330],
-
-      // Centro inferior até o inferior direito
-      [400, 330, 440, 380, 490, 430, 560, 430],
-
-      // Inferior direito até a curva direita
-      [560, 430, 660, 430, 730, 360, 720, 250],
-
-      // Curva direita até a parte superior direita
-      [720, 250, 730, 140, 660, 70, 560, 70],
-
-      // Superior direito até o centro superior
-      [560, 70, 490, 70, 440, 120, 400, 170]
-    ],
-    checkpoints: [[400, 330], [720, 250], [400, 170]]
-  },
-  oval: {
-    nome: 'Oval', descricao: 'Curvas abertas para manter a velocidade.',
-    curvas: [
-      [80,250,80,350,220,410,400,410],
-      [400,410,580,410,720,350,720,250],
-      [720,250,720,150,580,90,400,90],
-      [400,90,220,90,80,150,80,250]
-    ],
-    checkpoints: [[400,410], [720,250], [400,90]]
-  },
-  retangular: {
-    nome: 'Retangular', descricao: 'Retas longas e quatro curvas fechadas.',
-    curvas: [
-      [80,250,80,280,80,320,80,350],
-      [80,350,80,395,105,420,150,420],
-      [150,420,300,420,500,420,650,420],
-      [650,420,695,420,720,395,720,350],
-      [720,350,720,280,720,220,720,150],
-      [720,150,720,105,695,80,650,80],
-      [650,80,500,80,300,80,150,80],
-      [150,80,105,80,80,105,80,150],
-      [80,150,80,180,80,220,80,250]
-    ],
-    checkpoints: [[400,420], [720,250], [400,80]]
-  },
-  triangular: {
-    nome: 'Triangular', descricao: 'Três pontas arredondadas e uma grande diagonal.',
-    curvas: [
-      [80,250,80,290,80,330,80,360],
-      [80,360,80,400,110,420,160,420],
-      [160,420,310,420,500,420,650,420],
-      [650,420,710,420,725,390,675,360],
-      [675,360,520,280,320,170,170,90],
-      [170,90,115,60,80,80,80,140],
-      [80,140,80,175,80,215,80,250]
-    ],
-    checkpoints: [[400,420], [675,360], [170,90]]
-  }
-};
 
 class ObjetoJogo {
   constructor(x, y) {
@@ -81,7 +8,9 @@ class ObjetoJogo {
   }
 
   distancia(outro) {
-    return Math.hypot(this.x - outro.x, this.y - outro.y);
+    let dx = this.x - outro.x;
+    let dy = this.y - outro.y;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 }
 
@@ -93,7 +22,11 @@ class Carro extends ObjetoJogo {
     this.cor = cor;
     this.numero = numero;
     this.controles = controles;
-    this.reiniciar();
+    this.angulo = Math.PI / 2;
+    this.velocidade = 0;
+    this.voltas = 0;
+    this.checkpoint = 0;
+    this.saiuDaLargada = false;
   }
 
   reiniciar() {
@@ -126,14 +59,19 @@ class Carro extends ObjetoJogo {
       this.saiuDaLargada = true;
     }
 
-    // Os pontos precisam ser visitados na ordem certa.
-    if (this.saiuDaLargada && this.checkpoint < jogo.checkpoints.length &&
-        jogo.noCheckpoint(this, this.checkpoint + 1)) {
-      this.checkpoint++;
+    // Os tres pontos precisam ser visitados na ordem certa
+    if (this.saiuDaLargada && this.checkpoint === 0 && jogo.noCheckpoint(this, 1)) {
+      this.checkpoint = 1;
+    }
+    if (this.checkpoint === 1 && jogo.noCheckpoint(this, 2)) {
+      this.checkpoint = 2;
+    }
+    if (this.checkpoint === 2 && jogo.noCheckpoint(this, 3)) {
+      this.checkpoint = 3;
     }
 
     // A linha conta somente quando o carro passa para baixo dela
-    if (this.saiuDaLargada && this.checkpoint === jogo.checkpoints.length && this.x > 45 && this.x < 135 && yAntigo < jogo.linhaChegadaY && this.y >= jogo.linhaChegadaY) {
+    if (this.saiuDaLargada && this.checkpoint === 3 && this.x > 45 && this.x < 135 && yAntigo < jogo.linhaChegadaY && this.y >= jogo.linhaChegadaY) {
       this.voltas++;
       this.checkpoint = 0;
     }
@@ -170,6 +108,48 @@ class Jogo {
     this.larguraPista = 86;
     this.linhaChegadaY = 250;
 
+    /*
+      A pista é simétrica.
+      O lado direito é o espelho do lado esquerdo.
+    */
+    this.curvas = [
+      // Parte superior central para o alto esquerdo
+      [400, 170, 360, 120, 310, 70, 240, 70],
+
+      // Alto esquerdo até a curva esquerda
+      [240, 70, 140, 70, 70, 140, 80, 250],
+
+      // Curva esquerda até a parte inferior esquerda
+      [80, 250, 70, 360, 140, 430, 240, 430],
+
+      // Inferior esquerdo até o centro inferior
+      [240, 430, 310, 430, 360, 380, 400, 330],
+
+      // Centro inferior até o inferior direito
+      [400, 330, 440, 380, 490, 430, 560, 430],
+
+      // Inferior direito até a curva direita
+      [560, 430, 660, 430, 730, 360, 720, 250],
+
+      // Curva direita até a parte superior direita
+      [720, 250, 730, 140, 660, 70, 560, 70],
+
+      // Superior direito até o centro superior
+      [560, 70, 490, 70, 440, 120, 400, 170]
+    ];
+
+    /*
+      Os checkpoints ficam em lados diferentes da pista.
+      Eles não são desenhados.
+    */
+    this.checkpoints = [
+      { x: 400, y: 330 },
+      { x: 720, y: 250 },
+      { x: 400, y: 170 }
+    ];
+
+    this.pontosPista = [];
+    this.criarPontosPista();
 
     this.jogadores = [
       new Carro(
@@ -204,57 +184,31 @@ class Jogo {
     this.overlayKicker = document.getElementById('overlayKicker');
     this.overlayTitle = document.getElementById('overlayTitle');
     this.overlayText = document.getElementById('overlayText');
-    this.voltasTexto = this.jogadores.map((carro) =>
-      document.getElementById(`lap${carro.numero}`));
+    this.volta1Texto = document.getElementById('lap1');
+    this.volta2Texto = document.getElementById('lap2');
     this.timerTexto = document.getElementById('timer');
     this.tempoInicio = 0;
-    this.tempoRestante = DURACAO_CORRIDA;
-    this.seletorMapa = document.getElementById('mapSelect');
-    for (const [id, mapa] of Object.entries(MAPAS)) {
-      const opcao = document.createElement('option');
-      opcao.value = id;
-      opcao.textContent = mapa.nome;
-      this.seletorMapa.append(opcao);
-    }
-    this.seletorMapa.addEventListener('change', () => this.selecionarMapa());
-    this.seletorMapa.value = 'classico';
-    this.selecionarMapa();
-    this.atualizar();
-  }
-
-  selecionarMapa() {
-    if (this.rodando) return;
-    const mapa = MAPAS[this.seletorMapa.value];
-    this.curvas = mapa.curvas;
-    this.checkpoints = mapa.checkpoints.map(([x, y]) => ({x, y}));
-    this.pontosPista = [];
-    this.criarPontosPista();
-    for (const carro of this.jogadores) carro.reiniciar();
-    this.tempoRestante = DURACAO_CORRIDA;
-    this.mostrarVoltas();
-    this.mostrarTempo();
-    this.overlayKicker.textContent = 'INDY 500';
-    this.overlayTitle.textContent = mapa.nome;
-    this.overlayText.textContent = 'Faça mais voltas que o rival em 60 segundos.';
-    document.getElementById('mapDescription').textContent = mapa.descricao;
+    this.tempoRestante = 60;
     this.desenhar();
+    this.atualizar();
   }
 
   criarPontosPista() {
     // Cada curva e dividida em pontos para desenhar e medir a pista
-    for (const c of this.curvas) {
+    for (let i = 0; i < this.curvas.length; i++) {
+      let c = this.curvas[i];
       for (let passo = 0; passo <= 35; passo++) {
         let t = passo / 35;
         let outroT = 1 - t;
         let x = outroT * outroT * outroT * c[0] + 3 * outroT * outroT * t * c[2] + 3 * outroT * t * t * c[4] + t * t * t * c[6];
         let y = outroT * outroT * outroT * c[1] + 3 * outroT * outroT * t * c[3] + 3 * outroT * t * t * c[5] + t * t * t * c[7];
-        this.pontosPista.push({x, y});
+        this.pontosPista.push({x: x, y: y});
       }
     }
   }
 
   distanciaAtePista(x, y) {
-    let menorDistancia = Infinity;
+    let menorDistancia = 10000;
 
     for (let i = 0; i < this.pontosPista.length; i++) {
       let a = this.pontosPista[i];
@@ -262,12 +216,12 @@ class Jogo {
       let dx = b.x - a.x;
       let dy = b.y - a.y;
       let tamanho = dx * dx + dy * dy;
-      let parte = ((x - a.x) * dx + (y - a.y) * dy) / (tamanho || 1);
+      let parte = ((x - a.x) * dx + (y - a.y) * dy) / tamanho;
       parte = Math.max(0, Math.min(1, parte));
       let pertoX = a.x + parte * dx;
       let pertoY = a.y + parte * dy;
-      let distancia = Math.hypot(x - pertoX, y - pertoY);
-      menorDistancia = Math.min(menorDistancia, distancia);
+      let distancia = Math.sqrt((x - pertoX) * (x - pertoX) + (y - pertoY) * (y - pertoY));
+      if (distancia < menorDistancia) menorDistancia = distancia;
     }
     return menorDistancia;
   }
@@ -282,11 +236,11 @@ class Jogo {
   }
 
   iniciar() {
-    for (const carro of this.jogadores) carro.reiniciar();
+    this.jogadores[0].reiniciar();
+    this.jogadores[1].reiniciar();
     this.rodando = true;
-    this.seletorMapa.disabled = true;
     this.tempoInicio = performance.now();
-    this.tempoRestante = DURACAO_CORRIDA;
+    this.tempoRestante = 60;
     this.overlay.classList.add('hidden');
     document.getElementById('startButton').textContent = 'CORRER NOVAMENTE';
     this.mostrarVoltas();
@@ -295,25 +249,25 @@ class Jogo {
 
   terminar() {
     this.rodando = false;
-    this.seletorMapa.disabled = false;
     this.overlay.classList.remove('hidden');
     this.overlayKicker.textContent = 'BANDEIRA QUADRICULADA';
-    const [carro1, carro2] = this.jogadores;
-    const vencedor = carro1.voltas > carro2.voltas ? carro1 : carro2;
-    this.overlayTitle.textContent = carro1.voltas === carro2.voltas
-      ? 'Empate!'
-      : `Jogador ${vencedor.numero} venceu!`;
-    this.overlayText.textContent = `Placar final: ${carro1.voltas} x ${carro2.voltas} voltas`;
+    if (this.jogadores[0].voltas > this.jogadores[1].voltas) {
+      this.overlayTitle.textContent = 'Jogador 1 venceu!';
+    } else if (this.jogadores[1].voltas > this.jogadores[0].voltas) {
+      this.overlayTitle.textContent = 'Jogador 2 venceu!';
+    } else {
+      this.overlayTitle.textContent = 'Empate!';
+    }
+    this.overlayText.textContent = 'Placar final: ' + this.jogadores[0].voltas + ' x ' + this.jogadores[1].voltas + ' voltas';
   }
 
   mostrarVoltas() {
-    this.jogadores.forEach((carro, indice) => {
-      this.voltasTexto[indice].textContent = `${carro.voltas} voltas`;
-    });
+    this.volta1Texto.textContent = this.jogadores[0].voltas + ' voltas';
+    this.volta2Texto.textContent = this.jogadores[1].voltas + ' voltas';
   }
 
   mostrarTempo() {
-    this.timerTexto.textContent = `Tempo: ${Math.ceil(this.tempoRestante)}s`;
+    this.timerTexto.textContent = 'Tempo: ' + Math.ceil(this.tempoRestante) + 's';
   }
 
   desenharPista() {
@@ -357,12 +311,14 @@ class Jogo {
     ctx.fillRect(0, 0, 800, 500);
     this.desenharPista();
 
-    for (const carro of this.jogadores) carro.desenhar(ctx);
+    for (let i = 0; i < this.jogadores.length; i++) {
+      this.jogadores[i].desenhar(ctx);
+    }
   }
 
   atualizar() {
     if (this.rodando) {
-      this.tempoRestante = DURACAO_CORRIDA - (performance.now() - this.tempoInicio) / 1000;
+      this.tempoRestante = 60 - (performance.now() - this.tempoInicio) / 1000;
       if (this.tempoRestante <= 0) {
         this.tempoRestante = 0;
         this.mostrarTempo();
@@ -370,9 +326,12 @@ class Jogo {
       }
 
       if (this.rodando) {
-        for (const carro of this.jogadores) carro.mover(this);
+        for (let i = 0; i < this.jogadores.length; i++) {
+          this.jogadores[i].mover(this);
+        }
 
-        const [carro1, carro2] = this.jogadores;
+        let carro1 = this.jogadores[0];
+        let carro2 = this.jogadores[1];
         if (carro1.distancia(carro2) < 22) {
           carro1.x -= 1;
           carro2.x += 1;
@@ -388,7 +347,7 @@ class Jogo {
 
 document.addEventListener('keydown', function(evento) {
   teclas[evento.code] = true;
-  if (jogo.rodando && evento.code.startsWith('Arrow')) evento.preventDefault();
+  if (evento.code.indexOf('Arrow') === 0) evento.preventDefault();
 });
 
 document.addEventListener('keyup', function(evento) {
