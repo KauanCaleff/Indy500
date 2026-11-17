@@ -44,9 +44,9 @@
         <p class="eyebrow">COMO FUNCIONA</p>
         <h2>Velocidade com estratégia</h2>
         <div class="cards">
-          <article><span class="card-number">01</span><h3>Domine a pista</h3><p>Acelere, freie e controle a derrapagem nas curvas. Sair do asfalto reduz sua velocidade.</p></article>
+          <article><span class="card-number">01</span><h3>Domine a pista</h3><p>Acelere, freie e controle as curvas. As zebras reduzem a velocidade e os pneus mantêm os carros na pista.</p></article>
           <article><span class="card-number">02</span><h3>Complete o circuito</h3><p>Passe pelos pontos da pista na ordem correta. Cortar caminho não conta como uma volta completa.</p></article>
-          <article><span class="card-number">03</span><h3>Vença o duelo</h3><p>Faça mais voltas que o rival antes dos 60 segundos acabarem. Os carros também podem colidir.</p></article>
+          <article><span class="card-number">03</span><h3>Vença o duelo</h3><p>Faça mais voltas que o rival antes dos 60 segundos acabarem. Batidas fortes nos pneus custam vidas. Após três batidas, o carro retorna em três segundos.</p></article>
         </div>
       </div>
     </section>
@@ -59,11 +59,23 @@
           <div class="player-control red"><span>JOGADOR 1</span><strong>W A S D</strong><small>W/S aceleram e freiam · A/D viram</small></div>
           <div class="player-control blue"><span>JOGADOR 2</span><strong>↑ ← ↓ →</strong><small>↑/↓ aceleram e freiam · ←/→ viram</small></div>
         </div>
+        <div class="map-picker">
+          <label for="mapSelect">ESCOLHA A PISTA</label>
+          <select id="mapSelect" aria-describedby="mapDescription"></select>
+          <p id="mapDescription" aria-live="polite"></p>
+          <small>A pista pode ser trocada entre as corridas.</small>
+        </div>
+        <div class="audio-controls" role="group" aria-label="Controles de som">
+          <button id="soundButton" type="button" aria-pressed="true">Som: ligado</button>
+          <label for="soundVolume">Volume</label>
+          <input id="soundVolume" type="range" min="0" max="100" value="28" step="1">
+          <output id="soundVolumeValue" for="soundVolume">28%</output>
+        </div>
         <div class="game-shell">
           <div class="hud">
-            <div><span class="dot red-dot"></span>P1 <b id="lap1">0 voltas</b></div>
+            <div><span class="dot red-dot"></span>P1 <b id="lap1">0 voltas</b><span class="lives" id="lives1">3 vidas</span></div>
             <div class="timer" id="timer">Tempo: 60s</div>
-            <div><span class="dot blue-dot"></span>P2 <b id="lap2">0 voltas</b></div>
+            <div><span class="dot blue-dot"></span>P2 <b id="lap2">0 voltas</b><span class="lives" id="lives2">3 vidas</span></div>
           </div>
           <canvas id="gameCanvas" width="800" height="500" aria-label="Jogo de corrida Indy 500 para dois jogadores"></canvas>
           <div class="game-overlay" id="gameOverlay">
@@ -79,6 +91,7 @@
   </main>
 
   <footer><div class="wrap"><span>INDY 500 — Projeto escolar</span><span>HTML5 · CSS3 · JavaScript · Canvas 2D</span></div></footer>
+  <script src="audio.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
